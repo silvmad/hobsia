@@ -1,5 +1,11 @@
-*_clusters/
-*.txt
-*dataset*
+clusters/
+datasets/
+models/
+misc/
 cleaning.py
-*_model*
+clean_transform.py
+*.txt
+*.py~
+*.csv
+__pycache__/
+.ipynb_checkpoints/
