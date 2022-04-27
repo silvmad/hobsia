@@ -4,7 +4,6 @@ models/
 misc/
 cleaning.py
 clean_transform.py
-*.txt
 *.py~
 *.csv
 __pycache__/
