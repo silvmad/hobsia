@@ -13,8 +13,7 @@ blédard
 métèque
 arabe de service
 sale arabe
-arabe
-voleur
+arabe voleur
 arabe pas français
 arabe étranger
 grand remplacement
@@ -144,7 +143,6 @@ gitane
 bohémien
 bohémienne
 caraque
-noi
 manouche
 manouches
 yéniches
