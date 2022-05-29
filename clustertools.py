@@ -10,25 +10,24 @@ n_most_freq_ignored = 40
 n_clust_info = 20
 kw_file = "kw_hate.txt"
 
-
 #Paramètres des figures
-plt.rcParams["figure.figsize"] = (10,10)
+plt.rcParams["figure.figsize"] = (13,10)
 plt.rcParams["lines.markersize"] = 4
 plt.rcParams["scatter.marker"] = '.'
 
 def init_globals(cd, rd, tdd, cld):
-    global clean_sample
-    clean_sample = cd
-    global raw_sample
-    raw_sample = rd
+    global clean_dataset_ct
+    clean_dataset_ct = cd
+    global raw_dataset_ct
+    raw_dataset_ct = rd
     #global dataset_encoded
     #dataset_encoded = ed
-    global two_dim_dataset
-    two_dim_dataset = tdd
+    global two_dim_dataset_ct
+    two_dim_dataset_ct = tdd
     global cluster_dir_ct
     cluster_dir_ct = cld
-    global ignored
-    ignored = [tup[0] for tup in create_sorted_wlist(clean_sample)[:n_most_freq_ignored]]
+    global ignored_ct
+    ignored_ct = [tup[0] for tup in create_sorted_wlist(clean_dataset_ct)[:n_most_freq_ignored]]
 
 
 #########################################
@@ -65,7 +64,7 @@ def build_res_dict(pred):
     return res
     
 #construire la liste des mots et les liste des messages (bruts, nettoyés et encodés) de chaque cluster
-#utilise les variables globales clean_sample et raw_sample
+#utilise les variables globales clean_dataset_ct et raw_dataset_ct
 def create_word_and_msg_lists(res):
     wlists = []
     mlists = []
@@ -83,10 +82,10 @@ def create_word_and_msg_lists(res):
         for n in res[i]: idx_list.append(n)
         # Création des listes de messages
         for idx in idx_list: 
-            clean_msg_list.append(clean_sample[idx])
-            raw_msg_list.append(raw_sample[idx])
+            clean_msg_list.append(clean_dataset_ct[idx])
+            raw_msg_list.append(raw_dataset_ct[idx])
             #encoded_msg_list.append(dataset_encoded[idx])
-            e2d_msg_list.append(two_dim_dataset[idx])
+            e2d_msg_list.append(two_dim_dataset_ct[idx])
         wlists.append(create_sorted_wlist(clean_msg_list))
         mlists.append(raw_msg_list)
         #emlists.append(encoded_msg_list)
@@ -94,14 +93,10 @@ def create_word_and_msg_lists(res):
         e2dmlists.append(e2d_msg_list)
     return wlists, mlists, cmlists, e2dmlists
 
-
-############################################
-
-
 # Détermine les mots les plus fréquents de chaque cluster
 # Renvoie un dictionnaire qui associe à chaque cluster la liste des 
 # n mots les plus fréquents
-def most_freq_words(n, wlists, ignored):
+def most_freq_words(n, wlists, ignored_ct):
     ret = []
     for i, tuplist in enumerate(wlists):
         j = 0
@@ -110,7 +105,7 @@ def most_freq_words(n, wlists, ignored):
         # Boucle jusqu'à avoir n mots ou être arrivé au bout de la liste
         while (j < n and k < len(tuplist)):
             word = tuplist[k][0]
-            if word not in ignored:
+            if word not in ignored_ct:
                 wlist.append(word)
                 j += 1
             k += 1
@@ -140,9 +135,9 @@ def search_hate_words(mlists, file):
         ret.append((n_msg, perc))
     return ret
 
-# Renvoie une liste qui contient le nombre de messages de chaque cluster
+# Renvoie une liste de tuples qui associent pour chaque cluster son numéro à son nombre de messages
 def n_msg_by_clust(res):
-    return [len(res[i]) for i in sorted(res)]
+    return [(i, len(res[i])) for i in sorted(res)]
 
 ##############
 # Impression
@@ -164,11 +159,11 @@ def n_msg_by_clust(res):
 #         print('\n')
         
 def print_clusters_info(n_msg, mfw, hkw, centers=[]):
-    for i,(n, m, h, c) in enumerate(zip_longest(n_msg, mfw, hkw, centers)):
-        print_cluster_info(i, n, m, h, c)
+    for n, m, h, c in zip_longest(n_msg, mfw, hkw, centers):
+        print_cluster_info(n, m, h, c)
         
-def print_cluster_info(i, n_msg, mfw, hkw, centers=[]):
-    print("Cluster {} : {} messages".format(i, n_msg))
+def print_cluster_info(n_msg, mfw, hkw, centers=[]):
+    print("Cluster {} : {} messages".format(n_msg[0], n_msg[1]))
     print("{} messages contiennent un mot-clé haineux (soit {:.2f}%)".format(hkw[0], hkw[1]))
     print("Les {} mots les plus fréquents :".format(len(mfw)), end=' ')
     for word in mfw:
@@ -201,12 +196,19 @@ def print_hate_clusters_info(n_msg, mfw, hkw, centers=[]):
 # Affichage de graphiques                                        #
 ##################################################################
 
+# # Crée le graphique des résultats
+# def plot_results(res, tdd=two_dim_dataset_ct):
+#     for key in res.keys():
+#         cluster_data = [tdd[idx] for idx in res[key]]
+#         tcd = np.array(cluster_data).T
+#         plt.scatter(tcd[0], tcd[1])#, s=20, marker='.')
+#     plt.show()
+
 # Crée le graphique des résultats
-def plot_results(res):
-    for key in res.keys():
-        cluster_data = [two_dim_dataset[idx] for idx in res[key]]
-        tcd = np.array(cluster_data).T
-        plt.scatter(tcd[0], tcd[1], s=20, marker='.')
+def plot_results(pred, tdd):
+    tcd = tdd.T
+    plt.scatter(tcd[0], tcd[1], c=pred, cmap=plt.get_cmap('gist_rainbow'))
+    plt.colorbar()
     plt.show()
 
 def plot_clusters(e2dmlists):
@@ -221,12 +223,12 @@ def plot_clusters(e2dmlists):
     
 def save_clusters_info(n_msg, mfw, hkw, method, centers=[]):
     fname = cluster_dir_ct + "{0}/{0}_clusters_info.txt".format(method)
-    for i, (n, m, h, c) in enumerate(zip_longest(n_msg, mfw, hkw, centers)):
-        save_cluster_info(fname, i, n, m, h, c)
+    for n, m, h, c in zip_longest(n_msg, mfw, hkw, centers):
+        save_cluster_info(fname, n, m, h, c)
 
-def save_cluster_info(file, i, n_msg, mfw, hkw, centers):
+def save_cluster_info(file, n_msg, mfw, hkw, centers):
     with open(file, "a") as f:
-        f.write("Cluster {} : {} messages\n".format(i, n_msg))
+        f.write("Cluster {} : {} messages\n".format(n_msg[0], n_msg[1]))
         f.write("{} messages contiennent un mot-clé haineux (soit {:.2f}%)\n".format(hkw[0], hkw[1]))
         f.write("Les {} mots les plus fréquents : ".format(len(mfw)))
         for word in mfw:
@@ -295,38 +297,30 @@ def save_clusters_msg(cmlists, mlists, e2dmlists, method):
 def parse(pred):
     res = build_res_dict(pred)
     wlists, mlists, cmlists, e2dmlists = create_word_and_msg_lists(res)
-    mfw = most_freq_words(n_clust_info, wlists, ignored)
+    mfw = most_freq_words(n_clust_info, wlists, ignored_ct)
     hkw = search_hate_words(mlists, kw_file)
     clust_n_msg = n_msg_by_clust(res)
-    return wlists, mlists, cmlists, e2dmlists, mfw, hkw, clust_n_msg
+    return res, wlists, mlists, cmlists, e2dmlists, mfw, hkw, clust_n_msg
     
 # Analyse des résultats du clustering et sauvegarde des résultats
 def parse_results(pred, method, centers=[]):
-    res = build_res_dict(pred)
-    wlists, mlists, cmlists, e2dmlists = create_word_and_msg_lists(res)
-    mfw = most_freq_words(n_clust_info, wlists, ignored)
-    hkw = search_hate_words(mlists, kw_file)
-    clust_n_msg = n_msg_by_clust(res)
+    res, wlists, mlists, cmlists, e2dmlists, mfw, hkw, clust_n_msg = parse(pred)
     print_clusters_info(clust_n_msg, mfw, hkw, centers)
-    plot_results(res)
+    plot_results(pred, two_dim_dataset_ct)
     save_clusters_msg(cmlists, mlists, e2dmlists, method)
     save_clusters_info(clust_n_msg, mfw, hkw, method, centers)
 
 # Analyse sans sauvegarde.
 def parse_no_save(pred, centers=[]):
-    res = build_res_dict(pred)
-    wlists, mlists, cmlists, e2dmlists = create_word_and_msg_lists(res)
-    mfw = most_freq_words(n_clust_info, wlists, ignored)
-    hkw = search_hate_words(mlists, kw_file)
-    clust_n_msg = n_msg_by_clust(res)
+    res, wlists, mlists, cmlists, e2dmlists, mfw, hkw, clust_n_msg = parse(pred)
     print_clusters_info(clust_n_msg, mfw, hkw, centers)
-    plot_results(res)
+    plot_results(pred, two_dim_dataset_ct)
 
 # A FINIR
 def parse_hate_clusters(pred, centers=[]):
     res = build_res_dict(pred)
     wlists, mlists, cmlists, e2dmlists = create_word_and_msg_lists(res)
-    mfw = most_freq_words(n_clust_info, wlists, ignored)
+    mfw = most_freq_words(n_clust_info, wlists, ignored_ct)
     hkw = search_hate_words(mlists, kw_file)
     clust_n_msg = n_msg_by_clust(res)
     print_hate_clusters_info(clust_n_msg, mfw, hkw, centers)
@@ -369,8 +363,8 @@ def parse_clusters(clean_clusters, raw_clusters, two_dim_clusters):
     for cluster in clean_clusters:
         dataset += cluster
     wlists = [create_sorted_wlist(cluster) for cluster in clean_clusters]
-    ignored = [tup[0] for tup in create_sorted_wlist(dataset)[:n_most_freq_ignored]]
-    mfw = most_freq_words(n_clust_info, wlists, ignored)
+    ignored_ct = [tup[0] for tup in create_sorted_wlist(dataset)[:n_most_freq_ignored]]
+    mfw = most_freq_words(n_clust_info, wlists, ignored_ct)
     hkw = search_hate_words(raw_clusters, kw_file)
     clust_n_msg = [len(clust) for clust in clean_clusters]
     print_clusters_info(clust_n_msg, mfw, hkw)
