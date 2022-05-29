@@ -212,9 +212,13 @@ def plot_results(pred, tdd):
     plt.show()
 
 def plot_clusters(e2dmlists):
-    for mlist in e2dmlists:
-        tml = mlist.T
-        plt.scatter(tml[0], tml[1], s=20, marker='.')
+    pred = []
+    tdd = np.concatenate(e2dmlists, axis=0)
+    for i, mlist in enumerate(e2dmlists):
+        pred += [i for e in mlist]
+    tml = tdd.T
+    plt.scatter(tml[0], tml[1], c= pred, cmap=plt.get_cmap('gist_rainbow'))
+    plt.colorbar()
     plt.show
 
 ##################################################################
@@ -366,6 +370,6 @@ def parse_clusters(clean_clusters, raw_clusters, two_dim_clusters):
     ignored_ct = [tup[0] for tup in create_sorted_wlist(dataset)[:n_most_freq_ignored]]
     mfw = most_freq_words(n_clust_info, wlists, ignored_ct)
     hkw = search_hate_words(raw_clusters, kw_file)
-    clust_n_msg = [len(clust) for clust in clean_clusters]
+    clust_n_msg = [(i, len(clust)) for i, clust in enumerate(clean_clusters)]
     print_clusters_info(clust_n_msg, mfw, hkw)
     plot_clusters(two_dim_clusters)
