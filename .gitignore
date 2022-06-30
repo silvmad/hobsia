@@ -2,6 +2,7 @@ clusters/
 datasets/
 models/
 misc/
+logs/
 cleaning.py
 clean_transform.py
 *.py~
